@@ -1,8 +1,10 @@
 import React, { useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import { assets } from "../../assets/data";
+import toast from "react-hot-toast";
 
 const AddProduct = () => {
+  const {axios, getToken, currency} = useAppContext()
   const [images, setImages] = useState({
     1: null,
     2: null,
@@ -61,9 +63,115 @@ const AddProduct = () => {
     "Oranges",
   ];
 
+  const addSizePrice = () => {
+    if (!newSize || !newPrice) {
+      toast.error("Please enter size and price");
+      return;
+    }
+    if (sizePrices.some((sp) => sp.size === newSize)) {
+      toast.error("Size already exists");
+      return;
+    }
+    setSizePrices([
+      ...sizePrices,
+      { size: newSize, price: parseFloat(newPrice) },
+    ]);
+    setNewPrice("");
+    setNewSize("");
+  };
+
+  const removeSizePrice = (size) => {
+    setSizePrices(sizePrices.filter((sp) => sp.size !== size));
+  };
+
+  const onSubmitHandler = async (event) => {
+    event.preventDefault();
+    //check if all inputs are filled
+    if (
+      !inputs.title ||
+      !inputs.description ||
+      !inputs.category ||
+      !inputs.type
+    ) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+    if (sizePrices.length === 0) {
+      toast.error("Please add at least one size and price");
+      return;
+    }
+    const hasImage = Object.values(images).some((img) => img !== null);
+
+    if (!hasImage) {
+      toast.error("Please upload at least one image");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const formData = new FormData();
+      const prices = {};
+      const sizes = [];
+
+      sizePrices.forEach((sp) => {
+        prices[sp.size] = sp.price;
+        sizes.push(sp.size);
+      });
+
+      const productData = {
+        title: inputs.title,
+        description: inputs.description,
+        category: inputs.category,
+        type: inputs.type,
+        popular: inputs.popular,
+        price: prices,
+        sizes: sizes,
+      };
+
+      formData.append("productData", JSON.stringify(productData));
+
+      //Adding images to formData
+      Object.keys(images).forEach((key) => {
+        if (images[key]) {
+          formData.append("images", images[key]);
+        }
+      });
+
+      const { data } = await axios.post("/api/products", formData, {
+        headers: { Authorization: `Bearer ${await getToken()}` },
+      });
+
+      if (data.success) {
+        toast.success(data.message);
+        //reset form after success
+        setInputs({
+          title: "",
+          description: "",
+          category: "",
+          type: "",
+          popular: false,
+        });
+
+        setSizePrices([]);
+        setImages({ 1: null, 2: null, 3: null, 4: null });
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="md:px-8 py-6 xl:py-8 m-1.5 sm:m-3 h-[97vh] overflow-y-scroll w-full lg:w-11/12 bg-primary shadow rounded-xl">
-      <form className="flex flex-col gap-y-3.5 px-2 text-sm w-full lg:w-11/12">
+      <form
+        onSubmit={onSubmitHandler}
+        className="flex flex-col gap-y-3.5 px-2 text-sm w-full lg:w-11/12"
+      >
         <div className="w-full">
           <h5>Product Name</h5>
           <input
@@ -128,18 +236,21 @@ const AddProduct = () => {
           <div className="flex gap-4 mt-2">
             <input
               value={newSize}
+              onChange={(e) => setNewSize(e.target.value.toUpperCase())}
               type="text"
               placeholder="Size (e.g. S,M,L,XL,H,F)"
               className="px-3 py-1.5 ring-1 ring-slate-900/10 rounded-lg bg-white text-gray-600 text-sm font-medium mt-1 w-32"
             />
             <input
               value={newPrice}
+              onChange={(e) => setNewPrice(e.target.value)}
               type="number"
               placeholder="Price"
               className="px-3 py-1.5 ring-1 ring-slate-900/10 rounded-lg bg-white text-gray-600 text-sm font-medium mt-1 w-32"
             />
             <button
               type="button"
+              onClick={addSizePrice}
               className="btn-solid font-semibold p-1.5 rounded-lg"
             >
               Add
@@ -147,11 +258,15 @@ const AddProduct = () => {
           </div>
           <div className="mt-2">
             {sizePrices.map((sp, index) => (
-              <div key={index}>
-                <span>
-                  {sp.size}: ${sp.price}
-                </span>
-                <button type="button" className="text-red-500">
+              <div key={index} className="flexStart gap-2">
+                <h5 className="">
+                  {sp.size}: {currency}{sp.price}
+                </h5>
+                <button
+                  onClick={() => removeSizePrice(sp.size)}
+                  type="button"
+                  className="text-red-500 ml-2 cursor-pointer font-bold"
+                >
                   Remove
                 </button>
               </div>
@@ -200,7 +315,11 @@ const AddProduct = () => {
             }
           />
         </div>
-        <button type="submit" disabled={loading} className="btn-solid font-semibold mt-3 p-2 max-w-36 sm:w-full rounded-xl">
+        <button
+          type="submit"
+          disabled={loading}
+          className="btn-solid font-semibold mt-3 p-2 max-w-36 sm:w-full rounded-xl"
+        >
           {loading ? "Adding" : "Add Product"}
         </button>
       </form>

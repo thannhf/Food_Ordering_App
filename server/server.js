@@ -10,6 +10,7 @@ import productRouter from "./routes/productRoute.js";
 import addressRouter from "./routes/addressRoute.js";
 import cartRouter from "./routes/cartRoute.js";
 import orderRouter from "./routes/orderRoute.js";
+import { stripeWebhooks } from "./controllers/stripeWebhooks.js";
 
 const port = process.env.PORT || 3000; // Define server port
 
@@ -18,6 +19,9 @@ await connectCloudinary();
 
 const app = express(); // Initialize Express Application
 app.use(cors()); // Enable Cross-Origin Resource sharing
+
+// api to listen to stripe webhooks
+app.post('/api/stripe', express.raw({type: "application/json"}), stripeWebhooks)
 
 //Middleware Setup
 app.use(express.json()); // Enable Json request body parsing

@@ -42,7 +42,69 @@ const Menu = () => {
     setType((prev) => prev.filter((t) => typeSet.has(t)));
   }, [category, products, allCategories]);
 
-  const totalPages = 7;
+  // Apply Filters like search, category, type and inStock
+  const applyFilters = () => {
+    let filtered = [...products];
+
+    // Product that are inStock
+    filtered = filtered.filter((p) => p.inStock);
+
+    if (searchQuery) {
+      filtered = filtered.filter((product) =>
+        product.title.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    if (category.length) {
+      filtered = filtered.filter((product) =>
+        category.includes(product.category)
+      );
+    }
+
+    if (type.length) {
+      filtered = filtered.filter((product) => type.includes(product.type));
+    }
+
+    return filtered;
+  };
+
+  //Sorting logic based on price or relevance
+  const applySorting = (productsList) => {
+    switch (selectedSort) {
+      case "low":
+        return [...productsList].sort(
+          (a, b) =>
+            Math.min(...Object.values(a.price)) -
+            Math.min(...Object.values(b.price))
+        );
+      case "high":
+        return [...productsList].sort(
+          (a, b) =>
+            Math.min(...Object.values(b.price)) -
+            Math.min(...Object.values(a.price))
+        );
+
+      default:
+        return productsList;
+    }
+  };
+
+  //Update filtered and sorted products whenever dependencies change
+  useEffect(() => {
+    let filtered = applyFilters();
+    let sorted = applySorting(filtered);
+    setFilteredProducts(sorted);
+    setCurrentPage(1);
+  }, [category, type, selectedSort, products, searchQuery]);
+
+  // handle pagination logic
+  const getPaginatedProducts = () => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredProducts.slice(startIndex, endIndex);
+  };
+
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
   return (
     <div className="max-padd-container !px-0 mt-18">
@@ -106,8 +168,8 @@ const Menu = () => {
         {/* filter products - Right side */}
         <div className="max-sm:px-10 sm:pr-10 bg-white px-4 rounded-l-xl my-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6">
-            {products.length > 0 ? (
-              products.map((product) => (
+            {getPaginatedProducts().length > 0 ? (
+              getPaginatedProducts().map((product) => (
                 <Item key={product._id} product={product} />
               ))
             ) : (

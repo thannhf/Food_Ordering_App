@@ -1,17 +1,50 @@
 import React, { useEffect, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
-import { assets, dummyDashboardData } from "../../assets/data";
+import { assets } from "../../assets/data";
+import toast from "react-hot-toast";
 
 const Dashboard = () => {
-  const { user, currency } = useAppContext();
+  const { user, currency, axios, getToken } = useAppContext();
   const [dashboardData, setDashboardData] = useState({
     orders: [],
     totalOrders: 0,
     totalRevenue: 0,
   });
 
-  const getDashboardData = () => {
-    setDashboardData(dummyDashboardData);
+  const getDashboardData = async () => {
+    try {
+      const { data } = await axios.get("/api/orders/", {
+        headers: { Authorization: `Bearer ${await getToken()}` },
+      });
+
+      if (data.success) {
+        setDashboardData(data.dashboardData);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const statusHandler = async (orderId, e) => {
+    try {
+      const { data } = await axios.post(
+        "/api/orders/status",
+        { orderId, status: e.target.value },
+        { headers: { Authorization: `Bearer ${await getToken()}` } }
+      );
+
+      if (data.success) {
+        await getDashboardData();
+        toast.success(data.message);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(error.message);
+    }
   };
 
   useEffect(() => {
@@ -143,6 +176,7 @@ const Dashboard = () => {
                 <h5 className="text-sm font-medium">Status:</h5>
                 <select
                   value={order.status}
+                  onChange={(e)=>statusHandler(order._id, e)}
                   className="text-sm font-semibold p-1 ring-1 ring-slate-900/5 rounded max-w-36 bg-primary"
                 >
                   <option value="Order Placed">Order Placed</option>

@@ -158,7 +158,7 @@ export const dummyProducts = [
     images: [product_1, product_5, product_4, product_8],
     price: { H: 5, F: 10 },
     description:
-      "Our Spicy Chicken Curry, made with tender chicken pieces cooked in a flavorful blendEnjoy of spices.",
+      "Our Spicy Chicken Curry, made with tender chicken pieces cooked in a flavorful blend Enjoy of spices.",
     category: "Curry",
     type: "Chicken Curry",
     sizes: ["H", "F"],

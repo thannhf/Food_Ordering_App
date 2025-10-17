@@ -1,13 +1,32 @@
 import React, { useEffect, useState } from "react";
 import Title from "../components/Title";
 import { useAppContext } from "../context/AppContext";
-import { dummyOrdersData } from "../assets/data";
+import { assets } from "../assets/data";
+import toast from "react-hot-toast";
 
 const MyOrders = () => {
-  const { currency, user } = useAppContext();
+  const { currency, user, axios, getToken } = useAppContext();
   const [orders, setOrders] = useState([]);
-  const loadOrderData = () => {
-    setOrders(dummyOrdersData);
+
+  const loadOrderData = async () => {
+    if (!user) return;
+    try {
+      const { data } = await axios.post(
+        "/api/orders/userorders", {},
+        {
+          headers: { Authorization: `Bearer ${await getToken()}` },
+        }
+      );
+
+      if (data.success) {
+        setOrders(data.orders)
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      console.log(error)
+      toast.error(error.message)
+    }
   };
 
   useEffect(() => {
@@ -106,7 +125,10 @@ const MyOrders = () => {
                   <p>{order.status}</p>
                 </div>
               </div>
-              <button onClick={loadOrderData} className="btn-solid !py-1 !text-xs rounded-sm">
+              <button
+                onClick={loadOrderData}
+                className="btn-solid !py-1 !text-xs rounded-sm"
+              >
                 Track Order
               </button>
             </div>

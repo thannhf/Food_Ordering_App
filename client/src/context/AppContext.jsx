@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { dummyProducts } from "../assets/data";
 import { useNavigate } from "react-router-dom";
 import { useAuth, useUser } from "@clerk/clerk-react";
 import toast from "react-hot-toast";
 import axios from "axios";
 
 axios.defaults.baseURL = import.meta.env.VITE_BACKEND_URL;
+// axios.defaults.baseURL = import.meta.env.VITE_API_BACKEND;
 
 const AppContext = createContext();
 
@@ -18,7 +18,7 @@ export const AppContextProvider = ({ children }) => {
   const { user } = useUser();
   const [cartItems, setCartItems] = useState({});
   const [method, setMethod] = useState("COD");
-  const [isOwner, setIsOwner] = useState(true);
+  const [isOwner, setIsOwner] = useState(false);
   const { getToken } = useAuth();
 
   // Get the User Profile
@@ -43,17 +43,48 @@ export const AppContextProvider = ({ children }) => {
   };
 
   // fetch all products
-  const fetchProducts = () => {
-    setProducts(dummyProducts);
+  const fetchProducts = async () => {
+    try {
+      const { data } = await axios.get("/api/products");
+
+      if (data.success) {
+        setProducts(data.products);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error(error.message);
+    }
   };
 
   // Add Products to Cart
-  const addToCart = (itemId, size) => {
+  const addToCart = async (itemId, size) => {
     if (!size) return toast.error("Please select a size first");
     let cartData = structuredClone(cartItems);
     cartData[itemId] = cartData[itemId] || {};
     cartData[itemId][size] = (cartData[itemId][size] || 0) + 1;
     setCartItems(cartData);
+
+    if (user) {
+      try {
+        const { data } = await axios.post(
+          "/api/cart/add",
+          { itemId, size },
+          {
+            headers: { Authorization: `Bearer ${await getToken()}` },
+          }
+        );
+
+        if (data.success) {
+          toast.success(data.message);
+        } else {
+          toast.error(data.message);
+        }
+      } catch (error) {
+        toast.error(error.message);
+      }
+    }
   };
 
   // Get Cart Count
@@ -68,10 +99,30 @@ export const AppContextProvider = ({ children }) => {
   };
 
   // Update cart quantity
-  const updateQuantity = (itemId, size, quantity) => {
+  const updateQuantity = async(itemId, size, quantity) => {
     let cartData = structuredClone(cartItems);
     cartData[itemId][size] = quantity;
     setCartItems(cartData);
+
+    if (user) {
+      try {
+        const { data } = await axios.post(
+          "/api/cart/update",
+          { itemId, size, quantity },
+          {
+            headers: { Authorization: `Bearer ${await getToken()}` },
+          }
+        );
+
+        if (data.success) {
+          toast.success(data.message);
+        } else {
+          toast.error(data.message);
+        }
+      } catch (error) {
+        toast.error(error.message);
+      }
+    }
   };
 
   // Get Cart Amount
@@ -116,6 +167,8 @@ export const AppContextProvider = ({ children }) => {
     setMethod,
     isOwner,
     setIsOwner,
+    axios,
+    getToken,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -17,7 +17,7 @@ export const addAddress = async (req, res) => {
 // Get address for user [get '/']
 export const getAddress = async (req, res) => {
   try {
-    const { userId } = req.body;
+    const { userId } = req.auth();
     const addresses = await Address.find({ userId }).sort({ createdAt: -1 });
 
     res.json({ success: true, addresses });

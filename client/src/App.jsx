@@ -15,6 +15,7 @@ import Dashboard from './pages/owner/Dashboard'
 import AddProduct from './pages/owner/AddProduct'
 import ListProducts from './pages/owner/ListProducts'
 import { useAppContext } from './context/AppContext'
+import Processing from './pages/Processing'
 
 const App = () => {
   const isOwnerPath = useLocation().pathname.includes('owner')
@@ -31,6 +32,7 @@ const App = () => {
         <Route path='/cart' element={<Cart />} />
         <Route path='/address-form' element={<AddressForm />} />
         <Route path='/my-orders' element={<MyOrders />} />
+        <Route path='/processing/:nextUrl' element={<Processing />} />
         <Route path='/owner' element={<Sidebar />}>
           <Route index element={<Dashboard />} />
           <Route path='/owner/add-product' element={<AddProduct />} />

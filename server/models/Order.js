@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const orderSchema = new mongoose.Schema({
     userId: {type:String, required: true, ref: "User"},
     items: [{
-        Order: {type:String, required: true, ref: "Order"},
+        product: {type:mongoose.Schema.Types.ObjectId, required: true, ref: "Product"},
         quantity: {type:Number, required: true},
         size: {type:String, required: true},
     }],

@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { useAppContext } from "../context/AppContext";
 
 const AddressForm = () => {
-  const { navigate, user } = useAppContext();
+  const { navigate, user, axios, getToken } = useAppContext();
   const [address, setAddress] = useState({
     firstName: "",
     lastName: "",
@@ -25,6 +25,24 @@ const AddressForm = () => {
     setAddress((data) => ({ ...data, [name]: value }));
   };
 
+  const onSubmitHandler = async (e) => {
+    e.preventDefault();
+    try {
+      const { data } = await axios.post("/api/addresses/add", { address },
+        {headers: { Authorization: `Bearer ${await getToken()}` },}
+      );
+
+      if (data.success) {
+        toast.success(data.message);
+        navigate("/cart");
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
   useEffect(() => {
     if (!user) {
       navigate("/cart");
@@ -36,7 +54,7 @@ const AddressForm = () => {
       {/* Container */}
       <div className="flex flex-col xl:flex-row gap-20 xl:gap-28">
         {/* Left Side */}
-        <form className="flex flex-[2] flex-col gap-3 text-[95%]">
+        <form onSubmit={onSubmitHandler} className="flex flex-[2] flex-col gap-3 text-[95%]">
           <Title
             title1={"Delivery"}
             title2={"Information"}

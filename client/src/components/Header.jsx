@@ -8,7 +8,7 @@ import { useAppContext } from "../context/AppContext";
 const Header = () => {
   const [menuOpened, setMenuOpened] = useState(false);
   const {openSignIn} = useClerk()
-  const {navigate, user, getCartCount} = useAppContext()
+  const {navigate, user, getCartCount, axios, isOwner, getToken} = useAppContext()
   const toggleMenu = () => setMenuOpened((prev) => !prev);
   const isHomePage = useLocation().pathname.endsWith('/')
 
@@ -65,6 +65,13 @@ const Header = () => {
         </div>
         {/* Button & Profile */}
         <div className="flex flex-1 items-center sm:justify-end gap-x-4 sm:gap-x-8">
+          <div>
+            {isOwner && (
+              <button onClick={()=>navigate("/owner")} className="btn-light ring-1 ring-slate-900/5 px-2 py-1 text-xs font-semibold">
+                Dashboard
+              </button>
+            )}
+          </div>
           {/* Menu Toggle */}
           <div className="relative lg:hidden w-7 h-6">
             <img

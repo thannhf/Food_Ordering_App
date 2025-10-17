@@ -55,6 +55,7 @@ const Cart = () => {
             <h5 className="text-center">Subtotal</h5>
             <h5 className="text-center">Action</h5>
           </div>
+          
           {cartData.map((item, i) => {
             const product = products.find(
               (product) => product._id === item._id

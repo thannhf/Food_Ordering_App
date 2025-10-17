@@ -1,7 +1,6 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useAppContext } from "../context/AppContext";
-import { dummyAddress } from "../assets/data";
 
 const CartTotal = () => {
   const {
@@ -16,11 +15,103 @@ const CartTotal = () => {
     cartItems,
     setCartItems,
     products,
+    axios,
+    getToken,
   } = useAppContext();
 
-  const [addresses, setAddresses] = useState(dummyAddress);
+  const [addresses, setAddresses] = useState([]);
   const [showAddress, setShowAddress] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState(null);
+
+  const getAddress = async () => {
+    try {
+      const { data } = await axios.get("/api/addresses", {
+        headers: { Authorization: `Bearer ${await getToken()}` },
+      });
+
+      if (data.success) {
+        setAddresses(data.addresses);
+        if (data.addresses.length > 0) {
+          setSelectedAddress(data.addresses[0]);
+        }
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const placeOrder = async () => {
+    try {
+      if (!selectedAddress) {
+        return toast.error("Please select an address");
+      }
+      let orderItems = [];
+      for (const itemId in cartItems) {
+        for (const size in cartItems[itemId]) {
+          if (cartItems[itemId][size] > 0) {
+            const itemInfo = structuredClone(
+              products.find((product) => product._id === itemId)
+            );
+            if (itemInfo) {
+              itemInfo.size = size;
+              itemInfo.quantity = cartItems[itemId][size];
+              orderItems.push(itemInfo);
+            }
+          }
+        }
+      }
+
+      // Convert orderitems to items array for backend
+      let items = orderItems.map((item) => ({
+        product: item._id,
+        quantity: item.quantity,
+        size: item.size,
+      }));
+
+      // Place order using COD
+      if (method === "COD") {
+        const { data } = await axios.post(
+          "/api/orders/cod",
+          { items, address: selectedAddress._id },
+          {
+            headers: { Authorization: `Bearer ${await getToken()}` },
+          }
+        );
+
+        if (data.success) {
+          setCartItems({}); // clear the cart after the cod order completion
+          navigate("/my-orders");
+          toast.success(data.message);
+        } else {
+          toast.error(data.message);
+        }
+      } else {
+        const { data } = await axios.post(
+          "/api/orders/stripe",
+          { items, address: selectedAddress._id },
+          {
+            headers: { Authorization: `Bearer ${await getToken()}` },
+          }
+        );
+
+        if (data.success) {
+          window.location.replace(data.url)
+        } else {
+          toast.error(data.message);
+        }
+      }
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  useEffect(() => {
+    if(user) {
+      getAddress()
+    }
+  }, [user])
 
   return (
     <div>
@@ -133,7 +224,7 @@ const CartTotal = () => {
           </p>
         </div>
       </div>
-      <button className="btn-solid w-full mt-8 !rounded-md py-2">
+      <button onClick={placeOrder} className="btn-solid w-full mt-8 !rounded-md py-2">
         Proceed to Order
       </button>
     </div>
